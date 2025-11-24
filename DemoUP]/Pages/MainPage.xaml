@@ -1,0 +1,143 @@
+﻿<Page x:Class="DemoUP_.Pages.MainPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:DemoUP_.Pages"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="Главная страница">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Шапка с логотипом и информацией о пользователе -->
+        <Border Grid.Row="0" 
+                Background="{StaticResource SecondaryBackgroundBrush}" 
+                Padding="15,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Логотип и название -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Border Width="40" Height="40" 
+                            Background="{StaticResource AttentionBrush}" 
+                            CornerRadius="5" 
+                            Margin="0,0,15,0">
+                        <TextBlock Text="👞" 
+                                  FontSize="20" 
+                                  HorizontalAlignment="Center" 
+                                  VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="ООО «Обувь»" 
+                              Style="{StaticResource HeaderTextStyle}"
+                              FontSize="18"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Заголовок текущей страницы -->
+                <TextBlock Grid.Column="1" 
+                          x:Name="CurrentPageTitle"
+                          Text="Просмотр товаров"
+                          Style="{StaticResource HeaderTextStyle}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+
+                <!-- Информация о пользователе -->
+                <StackPanel Grid.Column="2" 
+                           Orientation="Horizontal" 
+                           HorizontalAlignment="Right">
+                    <TextBlock x:Name="UserInfoText"
+                              Style="{StaticResource NormalTextStyle}"
+                              VerticalAlignment="Center"
+                              Margin="0,0,15,0"/>
+                    <Button x:Name="LogoutButton"
+                            Content="Выйти"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Padding="10,5"
+                            Click="LogoutButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Основная область -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Панель навигации -->
+            <Border Grid.Column="0" 
+                    Background="{StaticResource PrimaryBackgroundBrush}"
+                    BorderBrush="LightGray" 
+                    BorderThickness="0,0,1,0"
+                    Width="220">
+                <StackPanel>
+                    <!-- Кнопка Назад -->
+                    <Button x:Name="BackButton"
+                            Content="⬅️ Назад"
+                            Style="{StaticResource NavButtonStyle}"
+                            Click="BackButton_Click"
+                            Margin="0,0,0,10"/>
+
+                    <!-- Навигация для всех ролей -->
+                    <Button x:Name="ProductsViewButton"
+                            Content="📦 Просмотр товаров"
+                            Style="{StaticResource NavButtonStyle}"
+                            Click="ProductsViewButton_Click"/>
+
+                    <!-- Навигация только для менеджера и администратора -->
+                    <Button x:Name="OrdersViewButton"
+                            Content="📋 Просмотр заказов"
+                            Style="{StaticResource NavButtonStyle}"
+                            Click="OrdersViewButton_Click"
+                            Visibility="Collapsed"/>
+
+                    <!-- Навигация только для администратора -->
+                    <Button x:Name="ProductsManageButton"
+                            Content="⚙️ Управление товарами"
+                            Style="{StaticResource NavButtonStyle}"
+                            Click="ProductsManageButton_Click"
+                            Visibility="Collapsed"/>
+
+                    <Button x:Name="OrdersManageButton"
+                            Content="🛠️ Управление заказами"
+                            Style="{StaticResource NavButtonStyle}"
+                            Click="OrdersManageButton_Click"
+                            Visibility="Collapsed"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Область контента -->
+            <Frame Grid.Column="1" 
+                   x:Name="ContentFrame"
+                   NavigationUIVisibility="Hidden"
+                   Background="{StaticResource PrimaryBackgroundBrush}"/>
+        </Grid>
+
+        <StatusBar Grid.Row="2" 
+           Background="{StaticResource SecondaryBackgroundBrush}">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" 
+                  Style="{StaticResource NormalTextStyle}"
+                  FontSize="12"
+                  Text="Готов"/>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock x:Name="TimeTextBlock"
+                  Style="{StaticResource NormalTextStyle}"
+                  FontSize="12"
+                  Text="00:00:00"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Page>
