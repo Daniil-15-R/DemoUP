@@ -13,9 +13,7 @@ namespace DemoUP_
             Application.Current.Resources.MergedDictionaries.Add(resourceDict);
 
             InitializeComponent();
-
-            // Загружаем главную страницу вместо страницы авторизации
-            ShowMainPage("Guest"); // По умолчанию как гость
+            ShowAuthPage();
         }
 
         public void ShowAuthPage()

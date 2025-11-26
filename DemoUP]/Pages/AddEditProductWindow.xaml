@@ -52,9 +52,10 @@
                 <ComboBox x:Name="ManufacturerComboBox" Style="{StaticResource ComboBoxStyle}" 
                          Margin="0,5,0,15" DisplayMemberPath="Manufacture1"/>
 
+                <!-- Обычное текстовое поле для поставщика -->
                 <TextBlock Text="Поставщик:" Style="{StaticResource NormalTextStyle}"/>
-                <ComboBox x:Name="SupplierComboBox" Style="{StaticResource ComboBoxStyle}" 
-                         Margin="0,5,0,15" DisplayMemberPath="Supplier1"/>
+                <TextBox x:Name="SupplierTextBox" Style="{StaticResource TextBoxStyle}" 
+                        Margin="0,5,0,15"/>
 
                 <TextBlock Text="Описание:" Style="{StaticResource NormalTextStyle}"/>
                 <TextBox x:Name="DescriptionTextBox" Style="{StaticResource TextBoxStyle}" 

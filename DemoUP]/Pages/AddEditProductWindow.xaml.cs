@@ -64,9 +64,7 @@ namespace DemoUP_.Pages
                     var manufacturers = context.Manufacture.ToList();
                     ManufacturerComboBox.ItemsSource = manufacturers;
 
-                    // Загрузка поставщиков
-                    var suppliers = context.Supplier.ToList();
-                    SupplierComboBox.ItemsSource = suppliers;
+                    // Поставщики больше не загружаются в ComboBox
                 }
             }
             catch (Exception ex)
@@ -99,8 +97,9 @@ namespace DemoUP_.Pages
                 if (_product.Manufacture1 != null)
                     ManufacturerComboBox.SelectedItem = _product.Manufacture1;
 
+                // Заполняем текстовое поле поставщика
                 if (_product.Supplier1 != null)
-                    SupplierComboBox.SelectedItem = _product.Supplier1;
+                    SupplierTextBox.Text = _product.Supplier1.Supplier1;
 
                 // Загрузка изображения
                 if (!string.IsNullOrEmpty(_product.Photo) && File.Exists(_product.Photo))
@@ -330,10 +329,25 @@ namespace DemoUP_.Pages
                 product.Manufacture = selectedManufacturer.ID;
             }
 
-            if (SupplierComboBox.SelectedItem is Supplier selectedSupplier)
+            // Работа с поставщиком (теперь текстовое поле)
+            if (!string.IsNullOrWhiteSpace(SupplierTextBox.Text))
             {
-                product.Supplier1 = selectedSupplier;
-                product.Supplier = selectedSupplier.ID;
+                // Ищем существующего поставщика
+                var existingSupplier = context.Supplier.FirstOrDefault(s => s.Supplier1 == SupplierTextBox.Text.Trim());
+
+                if (existingSupplier != null)
+                {
+                    product.Supplier1 = existingSupplier;
+                    product.Supplier = existingSupplier.ID;
+                }
+                else
+                {
+                    // Создаем нового поставщика
+                    var newSupplier = new Supplier { Supplier1 = SupplierTextBox.Text.Trim() };
+                    context.Supplier.Add(newSupplier);
+                    product.Supplier1 = newSupplier;
+                    product.Supplier = newSupplier.ID;
+                }
             }
 
             product.Description = DescriptionTextBox.Text.Trim();
@@ -382,12 +396,12 @@ namespace DemoUP_.Pages
                 return false;
             }
 
-            // Проверка поставщика
-            if (SupplierComboBox.SelectedItem == null)
+            // Проверка поставщика (теперь текстовое поле)
+            if (string.IsNullOrWhiteSpace(SupplierTextBox.Text))
             {
-                MessageBox.Show("Выберите поставщика товара", "Ошибка валидации",
+                MessageBox.Show("Введите поставщика товара", "Ошибка валидации",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
-                SupplierComboBox.Focus();
+                SupplierTextBox.Focus();
                 return false;
             }
 
