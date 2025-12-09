@@ -15,26 +15,47 @@ namespace DemoUP_.Pages
         private ObservableCollection<ProductViewModel> _displayedProducts;
         private List<Supplier> _allSuppliers;
 
-        public bool IsManagerOrAdmin => _currentUserRole == "Manager" || _currentUserRole == "Admin";
+        public bool IsManagerOrAdmin => _currentUserRole == "Менеджер" || _currentUserRole == "Администратор";
+        public bool IsGuest => _currentUserRole == "Гость";
 
         public ProductsPage(string userRole)
         {
             InitializeComponent();
             _currentUserRole = userRole;
+
+            // Убрали отладочный код
             LoadProducts();
-            LoadSuppliers();
+
+            // Для гостя не загружаем поставщиков
+            if (!IsGuest)
+            {
+                LoadSuppliers();
+            }
+
             InitializeUI();
         }
 
         private void InitializeUI()
         {
-            ControlPanelBorder.Visibility = Visibility.Visible;
-            AddProductButton.Visibility = IsManagerOrAdmin ? Visibility.Visible : Visibility.Collapsed;
-
-            if (!IsManagerOrAdmin)
+            // Для гостя скрываем ВСЮ панель управления
+            if (IsGuest)
             {
-                SortByCountAsc.Visibility = Visibility.Collapsed;
-                SortByCountDesc.Visibility = Visibility.Collapsed;
+                ControlPanelBorder.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                // Для не-гостей показываем панель управления
+                ControlPanelBorder.Visibility = Visibility.Visible;
+
+                // Показываем кнопку добавления только для менеджеров/админов
+                AddProductButton.Visibility = IsManagerOrAdmin ? Visibility.Visible : Visibility.Collapsed;
+
+                // Скрываем кнопки сортировки по количеству для обычных пользователей
+                if (!IsManagerOrAdmin)
+                {
+                    SortByCountAsc.Visibility = Visibility.Collapsed;
+                    SortByCountDesc.Visibility = Visibility.Collapsed;
+                }
             }
         }
 
@@ -72,14 +93,14 @@ namespace DemoUP_.Pages
                 {
                     _allSuppliers = context.Supplier.ToList();
 
-                    // Создаем специальный класс для элемента "Все поставщики"
-                    var supplierList = new List<SupplierWrapper>
+                    // Создаем список для комбобокса
+                    var supplierList = new List<SupplierItem>
                     {
-                        new SupplierWrapper { Id = 0, Name = "Все поставщики" }
+                        new SupplierItem { Id = 0, Name = "Все поставщики" }
                     };
 
                     // Добавляем всех поставщиков
-                    supplierList.AddRange(_allSuppliers.Select(s => new SupplierWrapper
+                    supplierList.AddRange(_allSuppliers.Select(s => new SupplierItem
                     {
                         Id = s.ID,
                         Name = s.Supplier1
@@ -96,8 +117,8 @@ namespace DemoUP_.Pages
             }
         }
 
-        // Вспомогательный класс для обертки поставщиков
-        private class SupplierWrapper
+        // Вспомогательный класс для элементов комбобокса поставщиков
+        public class SupplierItem
         {
             public int Id { get; set; }
             public string Name { get; set; }
@@ -155,83 +176,87 @@ namespace DemoUP_.Pages
 
             var filteredProducts = _allProducts.AsEnumerable();
 
-            // Поиск по всем текстовым полям
-            if (!string.IsNullOrEmpty(SearchTextBox?.Text))
+            // Для гостя не применяем фильтры и сортировки - показываем все товары как есть
+            if (!IsGuest)
             {
-                var searchText = SearchTextBox.Text.ToLower();
-                filteredProducts = filteredProducts.Where(p =>
-                    (p.Title?.Title_product?.ToLower().Contains(searchText) == true) ||
-                    (p.Articuls?.ToLower().Contains(searchText) == true) ||
-                    (p.Description?.ToLower().Contains(searchText) == true) ||
-                    (p.Manufacture1?.Manufacture1?.ToLower().Contains(searchText) == true) ||
-                    (p.Supplier1?.Supplier1?.ToLower().Contains(searchText) == true) ||
-                    (p.Gender?.Gender_product?.ToLower().Contains(searchText) == true));
-            }
-
-            // Применяем фильтры по статусу
-            if (FilterComboBox?.SelectedIndex > 0)
-            {
-                switch (FilterComboBox.SelectedIndex)
+                // Поиск по всем текстовым полям
+                if (!string.IsNullOrEmpty(SearchTextBox?.Text))
                 {
-                    case 1: // Со скидкой
-                        filteredProducts = filteredProducts.Where(p => p.Discount > 0);
-                        break;
-                    case 2: // Большая скидка (>15%)
-                        filteredProducts = filteredProducts.Where(p => p.Discount > 15);
-                        break;
-                    case 3: // В наличии
-                        filteredProducts = filteredProducts.Where(p => p.Count > 0);
-                        break;
-                    case 4: // Нет в наличии
-                        filteredProducts = filteredProducts.Where(p => p.Count == 0);
-                        break;
+                    var searchText = SearchTextBox.Text.ToLower();
+                    filteredProducts = filteredProducts.Where(p =>
+                        (p.Title?.Title_product?.ToLower().Contains(searchText) == true) ||
+                        (p.Articuls?.ToLower().Contains(searchText) == true) ||
+                        (p.Description?.ToLower().Contains(searchText) == true) ||
+                        (p.Manufacture1?.Manufacture1?.ToLower().Contains(searchText) == true) ||
+                        (p.Supplier1?.Supplier1?.ToLower().Contains(searchText) == true) ||
+                        (p.Gender?.Gender_product?.ToLower().Contains(searchText) == true));
                 }
-            }
 
-            // Применяем фильтр по поставщику
-            if (SupplierFilterComboBox?.SelectedItem != null && SupplierFilterComboBox.SelectedIndex > 0)
-            {
-                var selectedItem = SupplierFilterComboBox.SelectedItem;
-
-                // Если выбран реальный поставщик (не "Все поставщики")
-                if (selectedItem is SupplierWrapper selectedSupplier && selectedSupplier.Id > 0)
+                // Применяем фильтры по статусу
+                if (FilterComboBox?.SelectedIndex > 0)
                 {
-                    filteredProducts = filteredProducts.Where(p => p.Supplier1?.ID == selectedSupplier.Id);
+                    switch (FilterComboBox.SelectedIndex)
+                    {
+                        case 1: // Со скидкой
+                            filteredProducts = filteredProducts.Where(p => p.Discount > 0);
+                            break;
+                        case 2: // Большая скидка (>15%)
+                            filteredProducts = filteredProducts.Where(p => p.Discount > 15);
+                            break;
+                        case 3: // В наличии
+                            filteredProducts = filteredProducts.Where(p => p.Count > 0);
+                            break;
+                        case 4: // Нет в наличии
+                            filteredProducts = filteredProducts.Where(p => p.Count == 0);
+                            break;
+                    }
                 }
-            }
 
-            // Сортировка
-            if (SortComboBox?.SelectedIndex > 0)
-            {
-                switch (SortComboBox.SelectedIndex)
+                // Применяем фильтр по поставщику
+                if (SupplierFilterComboBox?.SelectedItem != null && SupplierFilterComboBox.SelectedIndex > 0)
                 {
-                    case 1: // По названию (А-Я)
-                        filteredProducts = filteredProducts.OrderBy(p => p.Title?.Title_product ?? "");
-                        break;
-                    case 2: // По названию (Я-А)
-                        filteredProducts = filteredProducts.OrderByDescending(p => p.Title?.Title_product ?? "");
-                        break;
-                    case 3: // По цене (возрастание)
-                        filteredProducts = filteredProducts.OrderBy(p => p.Cost);
-                        break;
-                    case 4: // По цене (убывание)
-                        filteredProducts = filteredProducts.OrderByDescending(p => p.Cost);
-                        break;
-                    case 5: // По количеству (возрастание)
-                        filteredProducts = filteredProducts.OrderBy(p => p.Count);
-                        break;
-                    case 6: // По количеству (убывание)
-                        filteredProducts = filteredProducts.OrderByDescending(p => p.Count);
-                        break;
-                    case 7: // По скидке (убывание)
-                        filteredProducts = filteredProducts.OrderByDescending(p => p.Discount);
-                        break;
+                    var selectedItem = SupplierFilterComboBox.SelectedItem;
+
+                    // Если выбран реальный поставщик (не "Все поставщики")
+                    if (selectedItem is SupplierItem selectedSupplier && selectedSupplier.Id > 0)
+                    {
+                        filteredProducts = filteredProducts.Where(p => p.Supplier1?.ID == selectedSupplier.Id);
+                    }
+                }
+
+                // Сортировка
+                if (SortComboBox?.SelectedIndex > 0)
+                {
+                    switch (SortComboBox.SelectedIndex)
+                    {
+                        case 1: // По названию (А-Я)
+                            filteredProducts = filteredProducts.OrderBy(p => p.Title?.Title_product ?? "");
+                            break;
+                        case 2: // По названию (Я-А)
+                            filteredProducts = filteredProducts.OrderByDescending(p => p.Title?.Title_product ?? "");
+                            break;
+                        case 3: // По цене (возрастание)
+                            filteredProducts = filteredProducts.OrderBy(p => p.Cost);
+                            break;
+                        case 4: // По цене (убывание)
+                            filteredProducts = filteredProducts.OrderByDescending(p => p.Cost);
+                            break;
+                        case 5: // По количеству (возрастание)
+                            filteredProducts = filteredProducts.OrderBy(p => p.Count);
+                            break;
+                        case 6: // По количеству (убывание)
+                            filteredProducts = filteredProducts.OrderByDescending(p => p.Count);
+                            break;
+                        case 7: // По скидке (убывание)
+                            filteredProducts = filteredProducts.OrderByDescending(p => p.Discount);
+                            break;
+                    }
                 }
             }
 
             // Преобразуем в ViewModel для отображения
             _displayedProducts = new ObservableCollection<ProductViewModel>(
-                filteredProducts.Select(p => new ProductViewModel(p, IsManagerOrAdmin)));
+                filteredProducts.Select(p => new ProductViewModel(p, IsManagerOrAdmin, IsGuest)));
 
             ProductsItemsControl.ItemsSource = _displayedProducts;
 
@@ -239,52 +264,75 @@ namespace DemoUP_.Pages
             NoProductsText.Visibility = _displayedProducts.Any() ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        // Обработчики событий
+        // Обработчики событий - для гостя они не вызываются, так как панель управления скрыта
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            ApplyFiltersAndSort();
+            if (!IsGuest)
+            {
+                ApplyFiltersAndSort();
+            }
         }
 
         private void SortComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ApplyFiltersAndSort();
+            if (!IsGuest)
+            {
+                ApplyFiltersAndSort();
+            }
         }
 
         private void FilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ApplyFiltersAndSort();
+            if (!IsGuest)
+            {
+                ApplyFiltersAndSort();
+            }
         }
 
         // ДОБАВЛЕННЫЙ МЕТОД - обработчик выбора поставщика
         private void SupplierFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ApplyFiltersAndSort();
+            if (!IsGuest)
+            {
+                ApplyFiltersAndSort();
+            }
         }
 
         private void ResetFiltersButton_Click(object sender, RoutedEventArgs e)
         {
-            SearchTextBox.Text = string.Empty;
-            SortComboBox.SelectedIndex = 0;
-            FilterComboBox.SelectedIndex = 0;
-            SupplierFilterComboBox.SelectedIndex = 0;
-            ApplyFiltersAndSort();
+            if (!IsGuest)
+            {
+                SearchTextBox.Text = string.Empty;
+                SortComboBox.SelectedIndex = 0;
+                FilterComboBox.SelectedIndex = 0;
+                SupplierFilterComboBox.SelectedIndex = 0;
+                ApplyFiltersAndSort();
+            }
         }
 
         private void AddProductButton_Click(object sender, RoutedEventArgs e)
         {
-            // Открытие окна добавления товара
-            var addWindow = new AddEditProductWindow();
-            if (addWindow.ShowDialog() == true)
+            // Для гостя эта кнопка не видна, но на всякий случай проверяем
+            if (!IsGuest)
             {
-                // Обновляем список товаров и поставщиков
-                LoadProducts();
-                LoadSuppliers();
+                // Открытие окна добавления товара
+                var addWindow = new AddEditProductWindow();
+                if (addWindow.ShowDialog() == true)
+                {
+                    // Обновляем список товаров и поставщиков
+                    LoadProducts();
+                    if (!IsGuest)
+                    {
+                        LoadSuppliers();
+                    }
+                }
             }
         }
 
         private void EditProductButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is int productId)
+            // Для гостя кнопки редактирования не видны, но на всякий случай проверяем
+            if (!IsGuest && sender is Button button && button.Tag is int productId)
             {
                 var product = _allProducts.FirstOrDefault(p => p.ID == productId);
                 if (product != null)
@@ -295,7 +343,10 @@ namespace DemoUP_.Pages
                     {
                         // Обновляем список товаров и поставщиков
                         LoadProducts();
-                        LoadSuppliers();
+                        if (!IsGuest)
+                        {
+                            LoadSuppliers();
+                        }
                     }
                 }
             }
@@ -303,7 +354,8 @@ namespace DemoUP_.Pages
 
         private void DeleteProductButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is int productId)
+            // Для гостя кнопки удаления не видны, но на всякий случай проверяем
+            if (!IsGuest && sender is Button button && button.Tag is int productId)
             {
                 var result = MessageBox.Show("Вы уверены, что хотите удалить этот товар?",
                     "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -389,10 +441,11 @@ namespace DemoUP_.Pages
         public Brush StockStatusColor => IsOutOfStock ? Brushes.Red : Brushes.Green;
 
         public bool CanEdit { get; set; }
+        public bool CanViewDetails { get; set; } // Для гостя - возможность просмотра деталей
 
         public string ImagePath { get; set; }
 
-        public ProductViewModel(Product product, bool canEdit)
+        public ProductViewModel(Product product, bool canEdit, bool isGuest)
         {
             ID = product.ID;
             Articuls = product.Articuls ?? "Без артикула";
@@ -405,7 +458,8 @@ namespace DemoUP_.Pages
             Unit = product.Unit ?? "шт.";
             Count = product.Count;
             Discount = product.Discount;
-            CanEdit = canEdit;
+            CanEdit = canEdit && !isGuest; // Гость не может редактировать
+            CanViewDetails = isGuest; // Гость может только просматривать
 
             // Формируем путь к изображению
             ImagePath = GetImagePath(product.Photo);
@@ -413,14 +467,48 @@ namespace DemoUP_.Pages
 
         private string GetImagePath(string photoFileName)
         {
+            // Если фото не указано, возвращаем заглушку
             if (string.IsNullOrEmpty(photoFileName))
             {
-                // Возвращаем путь к изображению-заглушке, если фото не указано
                 return "/Pages/Image/picture.png";
             }
 
-            // Формируем полный путь к изображению
-            return $"/Pages/Image/{photoFileName}";
+            // Если путь уже содержит "://" (http:// или https://), оставляем как есть
+            if (photoFileName.Contains("://"))
+            {
+                return photoFileName;
+            }
+
+            // Если это абсолютный путь Windows (C:\...)
+            if (photoFileName.Length > 2 && photoFileName[1] == ':' && photoFileName[2] == '\\')
+            {
+                try
+                {
+                    // Извлекаем только имя файла из полного пути
+                    string fileName = System.IO.Path.GetFileName(photoFileName);
+
+                    // Проверяем, существует ли файл в локальной папке приложения
+                    string localPath = $"/Pages/Image/{fileName}";
+
+                    // Можно добавить проверку существования файла в папке приложения
+                    // если файла нет, вернем заглушку
+                    return localPath;
+                }
+                catch
+                {
+                    // В случае ошибки парсинга пути возвращаем заглушку
+                    return "/Pages/Image/picture.png";
+                }
+            }
+
+            // Если это уже относительный путь или просто имя файла
+            // Проверяем, начинается ли путь с "/"
+            if (!photoFileName.StartsWith("/") && !photoFileName.StartsWith("\\"))
+            {
+                return $"/Pages/Image/{photoFileName}";
+            }
+
+            return photoFileName;
         }
     }
 }

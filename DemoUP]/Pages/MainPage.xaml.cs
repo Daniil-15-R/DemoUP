@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Navigation;
 using System.Windows.Threading;
 
 namespace DemoUP_.Pages
@@ -8,113 +9,143 @@ namespace DemoUP_.Pages
     public partial class MainPage : Page
     {
         private string _currentUserRole;
+        private string _currentUserName;
         private DispatcherTimer _timer;
         private MainWindow _mainWindow;
 
-        public MainPage(string userRole, MainWindow mainWindow)
+        public MainPage(string userRole, string userName, MainWindow mainWindow)
         {
             InitializeComponent();
             _currentUserRole = userRole;
+            _currentUserName = userName;
             _mainWindow = mainWindow;
+
             InitializeUI();
             SetupNavigation();
             StartClock();
+            SetupBackButton();
         }
 
         private void InitializeUI()
         {
-            // Устанавливаем информацию о пользователе
-            string roleDisplay;
-            switch (_currentUserRole)
-            {
-                case "Администратор":
-                    roleDisplay = "Администратор";
-                    break;
-                case "Менеджер":
-                    roleDisplay = "Менеджер";
-                    break;
-                case "Авторизированныйклиент":
-                    roleDisplay = "Клиент";
-                    break;
-                default:
-                    roleDisplay = "Гость";
-                    break;
-            }
-
-            UserInfoText.Text = $"Роль: {roleDisplay}";
-
-            // Настраиваем видимость элементов в зависимости от роли
+            UserInfoText.Text = $"Пользователь: {_currentUserName}";
             SetupRoleBasedAccess();
         }
 
         private void SetupRoleBasedAccess()
         {
-            // Все роли видят просмотр товаров
+            // Для всех пользователей показываем просмотр товаров
             ProductsViewButton.Visibility = Visibility.Visible;
 
-            // Менеджер и администратор видят просмотр заказов
-            if (_currentUserRole == "Менеджер" || _currentUserRole == "Администратор")
+            // Для гостя скрываем все остальные кнопки
+            if (_currentUserRole == "Гость")
             {
-                OrdersViewButton.Visibility = Visibility.Visible;
+                OrdersViewButton.Visibility = Visibility.Collapsed;
+                ProductsManageButton.Visibility = Visibility.Collapsed;
+                OrdersManageButton.Visibility = Visibility.Collapsed;
             }
-
-            // Только администратор видит управление
-            if (_currentUserRole == "Администратор")
+            else
             {
-                ProductsManageButton.Visibility = Visibility.Visible;
-                OrdersManageButton.Visibility = Visibility.Visible;
+                // Для остальных пользователей
+                if (_currentUserRole == "Менеджер" || _currentUserRole == "Администратор")
+                {
+                    OrdersViewButton.Visibility = Visibility.Visible;
+                }
+
+                if (_currentUserRole == "Администратор")
+                {
+                    ProductsManageButton.Visibility = Visibility.Visible;
+                    OrdersManageButton.Visibility = Visibility.Visible;
+                }
             }
         }
 
         private void SetupNavigation()
         {
+            // Подписываемся на события навигации
+            ContentFrame.Navigated += ContentFrame_Navigated;
             NavigateToProductsView();
+        }
+
+        private void SetupBackButton()
+        {
+            // Обновляем видимость кнопки "Назад"
+            UpdateBackButtonVisibility();
+
+            // Обновляем состояние кнопки при изменении журнала навигации
+            ContentFrame.Navigated += (s, e) => UpdateBackButtonVisibility();
+        }
+
+        private void UpdateBackButtonVisibility()
+        {
+            // Показываем кнопку "Назад", только если есть куда возвращаться
+            BackButton.Visibility = ContentFrame.CanGoBack ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ContentFrame_Navigated(object sender, NavigationEventArgs e)
+        {
+            // Обновляем заголовок и статус при навигации
+            var page = e.Content as Page;
+            if (page != null)
+            {
+                // Определяем заголовок страницы на основе ее типа
+                if (page is ProductsPage)
+                {
+                    CurrentPageTitle.Text = "Просмотр товаров";
+                    SetActiveButton(ProductsViewButton);
+                    UpdateStatus("Режим просмотра товаров");
+                }
+                else if (page is OrderPage)
+                {
+                    CurrentPageTitle.Text = "Просмотр заказов";
+                    SetActiveButton(OrdersViewButton);
+                    UpdateStatus("Режим просмотра заказов");
+                }
+                else if (page is ProductsManagePage)
+                {
+                    CurrentPageTitle.Text = "Управление товарами";
+                    SetActiveButton(ProductsManageButton);
+                    UpdateStatus("Режим управления товарами");
+                }
+                else if (page is OrdersManagePage)
+                {
+                    CurrentPageTitle.Text = "Управление заказами";
+                    SetActiveButton(OrdersManageButton);
+                    UpdateStatus("Режим управления заказами");
+                }
+            }
+
+            // Обновляем видимость кнопки "Назад"
+            UpdateBackButtonVisibility();
         }
 
         private void NavigateToProductsView()
         {
-            CurrentPageTitle.Text = "Просмотр товаров";
-            SetActiveButton(ProductsViewButton);
-            UpdateStatus("Режим просмотра товаров");
             ContentFrame.Navigate(new ProductsPage(_currentUserRole));
         }
 
         private void NavigateToOrdersView()
         {
-            CurrentPageTitle.Text = "Просмотр заказов";
-            SetActiveButton(OrdersViewButton);
-            UpdateStatus("Режим просмотра заказов");
-
             ContentFrame.Navigate(new OrderPage(_currentUserRole));
         }
 
         private void NavigateToProductsManagement()
         {
-            CurrentPageTitle.Text = "Управление товарами";
-            SetActiveButton(ProductsManageButton);
-            UpdateStatus("Режим управления товарами");
-
             ContentFrame.Navigate(new ProductsManagePage());
         }
 
         private void NavigateToOrdersManagement()
         {
-            CurrentPageTitle.Text = "Управление заказами";
-            SetActiveButton(OrdersManageButton);
-            UpdateStatus("Режим управления заказами");
-
             ContentFrame.Navigate(new OrdersManagePage());
         }
 
         private void SetActiveButton(Button activeButton)
         {
-            // Сбрасываем все кнопки к обычному стилю
             ProductsViewButton.Style = (Style)FindResource("NavButtonStyle");
             OrdersViewButton.Style = (Style)FindResource("NavButtonStyle");
             ProductsManageButton.Style = (Style)FindResource("NavButtonStyle");
             OrdersManageButton.Style = (Style)FindResource("NavButtonStyle");
 
-            // Устанавливаем активный стиль для выбранной кнопки
             if (activeButton != null)
             {
                 activeButton.Style = (Style)FindResource("ActiveNavButtonStyle");
@@ -158,18 +189,35 @@ namespace DemoUP_.Pages
             NavigateToOrdersManagement();
         }
 
-        // Обработчик кнопки "Назад"
+        // Улучшенный обработчик кнопки "Назад"
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
             if (ContentFrame.CanGoBack)
             {
+                // Получаем информацию о текущей странице перед возвратом
+                var currentPage = ContentFrame.Content as Page;
+                string currentPageName = currentPage?.GetType().Name ?? "неизвестная страница";
+
+                // Возвращаемся назад
                 ContentFrame.GoBack();
-                UpdateStatus("Возврат к предыдущей странице");
+
+                // Обновляем статус
+                UpdateStatus($"Возврат с: {currentPageName}");
+
+                // Убираем запись из журнала навигации после перехода
+                // Это предотвращает бесконечную историю переходов
+                if (ContentFrame.CanGoBack)
+                {
+                    ContentFrame.RemoveBackEntry();
+                }
             }
             else
             {
                 UpdateStatus("Нет страниц для возврата");
             }
+
+            // Обновляем видимость кнопки после перехода
+            UpdateBackButtonVisibility();
         }
 
         private void LogoutButton_Click(object sender, RoutedEventArgs e)

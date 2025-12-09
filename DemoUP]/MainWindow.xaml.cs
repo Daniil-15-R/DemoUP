@@ -21,9 +21,16 @@ namespace DemoUP_
             MainFrame.Navigate(new AuthPage());
         }
 
-        public void ShowMainPage(string userRole)
+        // Изменяем метод для приема ФИО пользователя
+        public void ShowMainPage(string userRole, string userName = null)
         {
-            MainFrame.Navigate(new MainPage(userRole, this));
+            // Для гостя передаем "Гость" как имя
+            if (string.IsNullOrEmpty(userName))
+            {
+                userName = userRole == "Guest" ? "Гость" : "Пользователь";
+            }
+
+            MainFrame.Navigate(new MainPage(userRole, userName, this));
         }
     }
 }

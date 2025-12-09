@@ -65,7 +65,8 @@ namespace DemoUP_.Pages
 
                     if (Window.GetWindow(this) is MainWindow mainWindow)
                     {
-                        mainWindow.ShowMainPage(user.RoleName);
+                        // Передаем и роль, и ФИО в MainWindow
+                        mainWindow.ShowMainPage(user.RoleName, user.FIO);
                     }
                 }
                 else
@@ -83,12 +84,13 @@ namespace DemoUP_.Pages
         {
             HideError();
 
-            // Создаем гостевого пользователя
-            CurrentUser = new UserData { RoleName = "Guest" };
+            // Создаем гостевого пользователя - используем русское название роли
+            CurrentUser = new UserData { RoleName = "Гость", FIO = "Гость" };
 
             if (Window.GetWindow(this) is MainWindow mainWindow)
             {
-                mainWindow.ShowMainPage("Guest");
+                // Для гостя передаем роль "Гость"
+                mainWindow.ShowMainPage("Гость", "Гость");
             }
         }
 
@@ -102,12 +104,24 @@ namespace DemoUP_.Pages
 
             if (user != null)
             {
+                // Получаем ФИО из связанной таблицы FIO
+                // Предполагается, что в таблице FIO есть свойство FIO1 (столбец FIO)
+                string fio = "Не указано";
+                if (user.FIO1 != null)
+                {
+                    // Если в классе FIO свойство называется FIO1 (как в Users)
+                    fio = user.FIO1.FIO1 ?? "Не указано";
+
+                    // ИЛИ если в классе FIO есть отдельное свойство для ФИО
+                    // fio = user.FIO1.FullName ?? "Не указано";
+                }
+
                 return new UserData
                 {
                     Id = user.ID,
                     Login = user.Login,
                     RoleName = user.Role?.Role_users ?? "User",
-                    FIO = user.FIO1?.FIO1 ?? "Не указано",
+                    FIO = fio, // Используем полученное ФИО
                     RoleId = user.Role_users ?? 0,
                     FIOId = user.FIO ?? 0
                 };

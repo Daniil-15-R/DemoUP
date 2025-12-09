@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using System;
+using System.Data;
 using System.Data.Entity;
 using System.IO;
 using System.Linq;
@@ -105,6 +106,7 @@ namespace DemoUP_.Pages
                 if (!string.IsNullOrEmpty(_product.Photo) && File.Exists(_product.Photo))
                 {
                     LoadImageFromPath(_product.Photo);
+                    _currentPhoto = _product.Photo;
                 }
             }
         }
@@ -118,7 +120,6 @@ namespace DemoUP_.Pages
                 bitmap.UriSource = new Uri(imagePath);
                 bitmap.EndInit();
                 ProductImage.Source = bitmap;
-                _currentPhoto = imagePath;
             }
             catch (Exception ex)
             {
@@ -266,14 +267,22 @@ namespace DemoUP_.Pages
 
                             if (dbProduct != null)
                             {
-                                UpdateProductData(dbProduct, context);
+                                // Копируем данные из UI в найденный объект
+                                CopyDataToProduct(dbProduct, context);
+
+                                // Помечаем объект как измененный
+                                context.Entry(dbProduct).State = EntityState.Modified;
+
+                                // Помечаем связанные объекты как измененные если нужно
+                                if (dbProduct.Title != null)
+                                    context.Entry(dbProduct.Title).State = EntityState.Modified;
                             }
                         }
                         else
                         {
                             // Добавление нового товара
                             var newProduct = new Product();
-                            UpdateProductData(newProduct, context);
+                            CopyDataToProduct(newProduct, context);
                             context.Product.Add(newProduct);
                         }
 
@@ -293,13 +302,19 @@ namespace DemoUP_.Pages
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Ошибка сохранения: {ex.Message}\n\nВнутреннее исключение: {ex.InnerException?.Message}", "Ошибка",
+                    // Подробное логирование ошибки
+                    string errorDetails = $"Message: {ex.Message}\n";
+                    errorDetails += $"Inner Exception: {ex.InnerException?.Message}\n";
+                    errorDetails += $"Inner Exception Stack Trace: {ex.InnerException?.StackTrace}\n";
+                    errorDetails += $"Stack Trace: {ex.StackTrace}";
+
+                    MessageBox.Show($"Ошибка сохранения:\n{errorDetails}", "Ошибка",
                         MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
 
-        private void UpdateProductData(Product product, Entities context)
+        private void CopyDataToProduct(Product product, Entities context)
         {
             product.Articuls = ArticulTextBox.Text.Trim();
 
@@ -316,24 +331,34 @@ namespace DemoUP_.Pages
                 product.Title.Title_product = TitleTextBox.Text.Trim();
             }
 
-            // Устанавливаем выбранные значения из ComboBox
+            // Устанавливаем категорию через навигационное свойство
             if (CategoryComboBox.SelectedItem is Gender selectedCategory)
             {
+                // Присоединяем категорию к контексту если она отсоединена
+                if (context.Entry(selectedCategory).State == EntityState.Detached)
+                {
+                    context.Gender.Attach(selectedCategory);
+                }
                 product.Gender = selectedCategory;
-                product.Category = selectedCategory.ID;
+                product.Category = selectedCategory.ID; // Устанавливаем и внешний ключ для надежности
             }
 
+            // Устанавливаем производителя
             if (ManufacturerComboBox.SelectedItem is Manufacture selectedManufacturer)
             {
+                if (context.Entry(selectedManufacturer).State == EntityState.Detached)
+                {
+                    context.Manufacture.Attach(selectedManufacturer);
+                }
                 product.Manufacture1 = selectedManufacturer;
                 product.Manufacture = selectedManufacturer.ID;
             }
 
-            // Работа с поставщиком (теперь текстовое поле)
+            // Работа с поставщиком
             if (!string.IsNullOrWhiteSpace(SupplierTextBox.Text))
             {
-                // Ищем существующего поставщика
-                var existingSupplier = context.Supplier.FirstOrDefault(s => s.Supplier1 == SupplierTextBox.Text.Trim());
+                var supplierName = SupplierTextBox.Text.Trim();
+                var existingSupplier = context.Supplier.FirstOrDefault(s => s.Supplier1 == supplierName);
 
                 if (existingSupplier != null)
                 {
@@ -342,8 +367,7 @@ namespace DemoUP_.Pages
                 }
                 else
                 {
-                    // Создаем нового поставщика
-                    var newSupplier = new Supplier { Supplier1 = SupplierTextBox.Text.Trim() };
+                    var newSupplier = new Supplier { Supplier1 = supplierName };
                     context.Supplier.Add(newSupplier);
                     product.Supplier1 = newSupplier;
                     product.Supplier = newSupplier.ID;
@@ -396,7 +420,7 @@ namespace DemoUP_.Pages
                 return false;
             }
 
-            // Проверка поставщика (теперь текстовое поле)
+            // Проверка поставщика
             if (string.IsNullOrWhiteSpace(SupplierTextBox.Text))
             {
                 MessageBox.Show("Введите поставщика товара", "Ошибка валидации",
