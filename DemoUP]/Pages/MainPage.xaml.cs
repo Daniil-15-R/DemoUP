@@ -70,8 +70,9 @@ namespace DemoUP_.Pages
 
         private void UpdateBackButtonVisibility()
         {
-            // Показываем кнопку "Назад", только если есть куда возвращаться
-            BackButton.Visibility = ContentFrame.CanGoBack ? Visibility.Visible : Visibility.Collapsed;
+            // Показываем кнопку всегда, но меняем её активность
+            BackButton.Visibility = Visibility.Visible;
+            BackButton.IsEnabled = ContentFrame.CanGoBack;
         }
 
         private void ContentFrame_Navigated(object sender, NavigationEventArgs e)
