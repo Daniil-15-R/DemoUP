@@ -11,6 +11,7 @@
     <Grid Background="{StaticResource PrimaryBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -23,17 +24,43 @@
                       HorizontalAlignment="Center"/>
         </Border>
 
+        <!-- Панель управления заказами (видна только администратору) -->
+        <Border Grid.Row="1" 
+                Background="{StaticResource PrimaryBackgroundBrush}"
+                Padding="10,5">
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="AddButton"
+                        Content="➕ Добавить заказ"
+                        Click="AddButton_Click"
+                        Margin="0,0,10,0"
+                        Padding="10,5"
+                        Visibility="Collapsed"
+                        ToolTip="Добавить новый заказ (только для администратора)"/>
+
+                <Button x:Name="DeleteButton"
+                        Content="❌ Удалить"
+                        Click="DeleteButton_Click"
+                        Margin="0,0,10,0"
+                        Padding="10,5"
+                        Visibility="Collapsed"
+                        ToolTip="Удалить выбранный заказ (только для администратора)"/>
+            </StackPanel>
+        </Border>
+
         <!-- Список заказов -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <ItemsControl x:Name="OrdersItemsControl" Margin="20">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
+                        <!-- Изменяем на одиночный клик -->
                         <Border Background="White"
-                               BorderBrush="LightGray"
-                               BorderThickness="1"
-                               CornerRadius="5"
-                               Margin="0,5"
-                               Padding="15">
+       BorderBrush="LightGray"
+       BorderThickness="1"
+       CornerRadius="5"
+       Margin="0,5"
+       Padding="15"
+       MouseLeftButtonDown="OrderItem_MouseLeftButtonDown"
+       Cursor="Hand">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -62,18 +89,37 @@
                                                   Style="{StaticResource SmallTextStyle}"/>
                                     </StackPanel>
 
+                                    <!-- Клиент -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <TextBlock Text="Клиент: "
+                                                  Style="{StaticResource SmallTextStyle}"
+                                                  Foreground="Gray"/>
+                                        <TextBlock Text="{Binding ClientName}"
+                                                  Style="{StaticResource SmallTextStyle}"/>
+                                    </StackPanel>
+
                                     <!-- Статус заказа -->
                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                        <TextBlock Text="Статус заказа: "
+                                        <TextBlock Text="Статус: "
                                                   Style="{StaticResource SmallTextStyle}"
                                                   Foreground="Gray"/>
                                         <TextBlock Text="{Binding StatusName}"
                                                   Style="{StaticResource SmallTextStyle}"/>
                                     </StackPanel>
 
-                                    <!-- Адрес пункта выдачи -->
+                                    <!-- Состав заказа -->
                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                        <TextBlock Text="Адрес пункта выдачи: "
+                                        <TextBlock Text="Состав: "
+                                                  Style="{StaticResource SmallTextStyle}"
+                                                  Foreground="Gray"/>
+                                        <TextBlock Text="{Binding OrderComposition}"
+                                                  Style="{StaticResource SmallTextStyle}"
+                                                  TextWrapping="Wrap"/>
+                                    </StackPanel>
+
+                                    <!-- Адрес доставки -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <TextBlock Text="Адрес: "
                                                   Style="{StaticResource SmallTextStyle}"
                                                   Foreground="Gray"/>
                                         <TextBlock Text="{Binding DeliveryAddress}"
@@ -127,7 +173,7 @@
         </ScrollViewer>
 
         <!-- Сообщение при отсутствии заказов -->
-        <TextBlock Grid.Row="1"
+        <TextBlock Grid.Row="2"
                   x:Name="NoOrdersText"
                   Text="Заказы не найдены"
                   Style="{StaticResource LargeHeaderTextStyle}"

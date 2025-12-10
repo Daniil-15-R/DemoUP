@@ -41,8 +41,6 @@ namespace DemoUP_.Pages
             if (_currentUserRole == "Гость")
             {
                 OrdersViewButton.Visibility = Visibility.Collapsed;
-                ProductsManageButton.Visibility = Visibility.Collapsed;
-                OrdersManageButton.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -50,12 +48,6 @@ namespace DemoUP_.Pages
                 if (_currentUserRole == "Менеджер" || _currentUserRole == "Администратор")
                 {
                     OrdersViewButton.Visibility = Visibility.Visible;
-                }
-
-                if (_currentUserRole == "Администратор")
-                {
-                    ProductsManageButton.Visibility = Visibility.Visible;
-                    OrdersManageButton.Visibility = Visibility.Visible;
                 }
             }
         }
@@ -101,21 +93,7 @@ namespace DemoUP_.Pages
                     SetActiveButton(OrdersViewButton);
                     UpdateStatus("Режим просмотра заказов");
                 }
-                else if (page is ProductsManagePage)
-                {
-                    CurrentPageTitle.Text = "Управление товарами";
-                    SetActiveButton(ProductsManageButton);
-                    UpdateStatus("Режим управления товарами");
-                }
-                else if (page is OrdersManagePage)
-                {
-                    CurrentPageTitle.Text = "Управление заказами";
-                    SetActiveButton(OrdersManageButton);
-                    UpdateStatus("Режим управления заказами");
-                }
             }
-
-            // Обновляем видимость кнопки "Назад"
             UpdateBackButtonVisibility();
         }
 
@@ -129,22 +107,14 @@ namespace DemoUP_.Pages
             ContentFrame.Navigate(new OrderPage(_currentUserRole));
         }
 
-        private void NavigateToProductsManagement()
-        {
-            ContentFrame.Navigate(new ProductsManagePage());
-        }
-
-        private void NavigateToOrdersManagement()
-        {
-            ContentFrame.Navigate(new OrdersManagePage());
-        }
 
         private void SetActiveButton(Button activeButton)
         {
+            // Сбрасываем стили всех кнопок
             ProductsViewButton.Style = (Style)FindResource("NavButtonStyle");
             OrdersViewButton.Style = (Style)FindResource("NavButtonStyle");
-            ProductsManageButton.Style = (Style)FindResource("NavButtonStyle");
-            OrdersManageButton.Style = (Style)FindResource("NavButtonStyle");
+
+            // Убрана строка: ProductsManageButton.Style = (Style)FindResource("NavButtonStyle");
 
             if (activeButton != null)
             {
@@ -179,17 +149,6 @@ namespace DemoUP_.Pages
             NavigateToOrdersView();
         }
 
-        private void ProductsManageButton_Click(object sender, RoutedEventArgs e)
-        {
-            NavigateToProductsManagement();
-        }
-
-        private void OrdersManageButton_Click(object sender, RoutedEventArgs e)
-        {
-            NavigateToOrdersManagement();
-        }
-
-        // Улучшенный обработчик кнопки "Назад"
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
             if (ContentFrame.CanGoBack)
@@ -222,7 +181,8 @@ namespace DemoUP_.Pages
 
         private void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show("Вы уверены, что хотите выйти?", "Подтверждение выхода",
+            var result = MessageBox.Show("Вы уверены, что хотите выйти из системы?\n" +
+                                        "Все несохраненные данные будут потеряны.", "Подтверждение выхода",
                 MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)

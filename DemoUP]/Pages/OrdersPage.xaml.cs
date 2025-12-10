@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Data.Entity;
+using System.Windows.Input;
 
 namespace DemoUP_.Pages
 {
@@ -13,12 +14,35 @@ namespace DemoUP_.Pages
     {
         private string _currentUserRole;
         private ObservableCollection<OrderViewModel> _orders;
+        private Border _selectedBorder;
+        private OrderViewModel _selectedOrder;
+
+        public bool IsAdmin => _currentUserRole == "Администратор";
 
         public OrderPage(string userRole)
         {
             InitializeComponent();
             _currentUserRole = userRole;
+
+            // Скрываем/показываем кнопки управления в зависимости от роли
+            SetupRoleBasedAccess();
             LoadOrders();
+        }
+
+        private void SetupRoleBasedAccess()
+        {
+            if (_currentUserRole == "Администратор")
+            {
+                // Показываем кнопки управления для администратора
+                AddButton.Visibility = Visibility.Visible;
+                DeleteButton.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                // Скрываем кнопки управления для других ролей
+                AddButton.Visibility = Visibility.Collapsed;
+                DeleteButton.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void LoadOrders()
@@ -69,7 +93,118 @@ namespace DemoUP_.Pages
             }
         }
 
-        // Метод для демонстрационных данных
+        // ОБНОВЛЕННЫЙ ОБРАБОТЧИК: Одиночный клик для редактирования (как в ProductPage)
+        private void OrderItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                // Получаем Border, на который кликнули
+                if (sender is Border border)
+                {
+                    // Получаем DataContext Border'а (OrderViewModel)
+                    if (border.DataContext is OrderViewModel viewModel)
+                    {
+                        // Сохраняем выбранный элемент
+                        ClearSelection();
+                        _selectedBorder = border;
+                        _selectedOrder = viewModel;
+
+                        // Устанавливаем выделение
+                        border.BorderBrush = Brushes.Blue;
+                        border.BorderThickness = new Thickness(2);
+
+                        // Обновляем состояние кнопок
+                        UpdateButtonsState();
+
+                        // Если пользователь администратор, открываем редактирование сразу
+                        if (IsAdmin)
+                        {
+                            EditSelectedOrder();
+                        }
+                    }
+                }
+            }
+        }
+
+        // Метод для редактирования выбранного заказа
+        private void EditSelectedOrder()
+        {
+            if (_selectedOrder != null)
+            {
+                try
+                {
+                    using (var context = new Entities())
+                    {
+                        // Находим исходный заказ по номеру
+                        Orders order = null;
+
+                        if (int.TryParse(_selectedOrder.OrderNumber, out int orderNumber))
+                        {
+                            order = context.Orders
+                                .Include(o => o.FIO)
+                                .Include(o => o.PVZ)
+                                .Include(o => o.Status)
+                                .Include(o => o.Sostav)
+                                .FirstOrDefault(o => o.Numer_order == orderNumber);
+                        }
+                        else
+                        {
+                            // Если OrderNumber начинается с "ORD", убираем префикс
+                            var cleanOrderNumber = _selectedOrder.OrderNumber.Replace("ORD", "");
+                            if (int.TryParse(cleanOrderNumber, out int cleanNumber))
+                            {
+                                order = context.Orders
+                                    .Include(o => o.FIO)
+                                    .Include(o => o.PVZ)
+                                    .Include(o => o.Status)
+                                    .Include(o => o.Sostav)
+                                    .FirstOrDefault(o => o.Numer_order == cleanNumber);
+                            }
+                        }
+
+                        if (order != null)
+                        {
+                            var editWindow = new AddEditOrderWindow(order);
+                            if (editWindow.ShowDialog() == true)
+                            {
+                                LoadOrders();
+                                ClearSelection();
+                                _selectedOrder = null;
+                                UpdateButtonsState();
+                                MessageBox.Show("Заказ успешно отредактирован", "Успех",
+                                    MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при редактировании заказа: {ex.Message}", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        // Упрощенный метод для сброса выделения
+        private void ClearSelection()
+        {
+            if (_selectedBorder != null)
+            {
+                _selectedBorder.BorderBrush = Brushes.LightGray;
+                _selectedBorder.BorderThickness = new Thickness(1);
+                _selectedBorder = null;
+            }
+        }
+
+        // Метод для обновления состояния кнопок
+        private void UpdateButtonsState()
+        {
+            bool hasSelection = _selectedOrder != null;
+
+            if (DeleteButton != null) DeleteButton.IsEnabled = hasSelection;
+        }
+
+        // Метод для демонстрационных данных (остается без изменений)
         private List<OrderViewModel> GetSampleOrders()
         {
             return new List<OrderViewModel>
@@ -115,9 +250,272 @@ namespace DemoUP_.Pages
                 }
             };
         }
+
+        // Обработчики кнопок управления заказами
+
+        private void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Проверяем права администратора
+            if (_currentUserRole != "Администратор")
+            {
+                MessageBox.Show("Только администратор может добавлять заказы", "Ошибка прав",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var addWindow = new AddEditOrderWindow();
+            if (addWindow.ShowDialog() == true)
+            {
+                LoadOrders();
+                ClearSelection();
+                _selectedOrder = null;
+                UpdateButtonsState();
+                MessageBox.Show("Заказ успешно добавлен", "Успех",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Проверяем права администратора
+            if (_currentUserRole != "Администратор")
+            {
+                MessageBox.Show("Только администратор может редактировать заказы", "Ошибка прав",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            EditSelectedOrder();
+        }
+
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Проверяем права администратора
+            if (_currentUserRole != "Администратор")
+            {
+                MessageBox.Show("Только администратор может удалять заказы", "Ошибка прав",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (_selectedOrder != null)
+            {
+                var result = MessageBox.Show($"Вы уверены, что хотите удалить заказ #{_selectedOrder.OrderNumber}?",
+                    "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        using (var context = new Entities())
+                        {
+                            // Находим заказ по номеру
+                            Orders orderToDelete = null;
+
+                            if (int.TryParse(_selectedOrder.OrderNumber, out int orderNumber))
+                            {
+                                orderToDelete = context.Orders
+                                    .Include(o => o.Sostav)
+                                    .FirstOrDefault(o => o.Numer_order == orderNumber);
+                            }
+                            else
+                            {
+                                var cleanOrderNumber = _selectedOrder.OrderNumber.Replace("ORD", "");
+                                if (int.TryParse(cleanOrderNumber, out int cleanNumber))
+                                {
+                                    orderToDelete = context.Orders
+                                        .Include(o => o.Sostav)
+                                        .FirstOrDefault(o => o.Numer_order == cleanNumber);
+                                }
+                            }
+
+                            if (orderToDelete != null)
+                            {
+                                // Удаляем связанные записи в таблице Sostav
+                                var sostavItems = context.Sostav
+                                    .Where(s => s.ID_number_order == orderToDelete.ID_order)
+                                    .ToList();
+
+                                foreach (var item in sostavItems)
+                                {
+                                    context.Sostav.Remove(item);
+                                }
+
+                                // Удаляем сам заказ
+                                context.Orders.Remove(orderToDelete);
+                                context.SaveChanges();
+
+                                LoadOrders();
+                                ClearSelection();
+                                _selectedOrder = null;
+                                UpdateButtonsState();
+
+                                MessageBox.Show("Заказ успешно удален", "Успех",
+                                    MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка удаления заказа: {ex.Message}",
+                            "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Выберите заказ для удаления", "Предупреждение",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void UpdateStatusButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Проверяем права администратора
+            if (_currentUserRole != "Администратор")
+            {
+                MessageBox.Show("Только администратор может обновлять статусы", "Ошибка прав",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (_selectedOrder != null)
+            {
+                try
+                {
+                    using (var context = new Entities())
+                    {
+                        // Находим заказ по номеру
+                        Orders order = null;
+
+                        if (int.TryParse(_selectedOrder.OrderNumber, out int orderNumber))
+                        {
+                            order = context.Orders
+                                .FirstOrDefault(o => o.Numer_order == orderNumber);
+                        }
+                        else
+                        {
+                            var cleanOrderNumber = _selectedOrder.OrderNumber.Replace("ORD", "");
+                            if (int.TryParse(cleanOrderNumber, out int cleanNumber))
+                            {
+                                order = context.Orders
+                                    .FirstOrDefault(o => o.Numer_order == cleanNumber);
+                            }
+                        }
+
+                        if (order != null)
+                        {
+                            // Получаем все доступные статусы
+                            var allStatuses = context.Status.ToList();
+
+                            // Создаем окно выбора статуса
+                            var statusWindow = new Window
+                            {
+                                Title = "Выбор нового статуса",
+                                Width = 300,
+                                Height = 150,
+                                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                                Owner = Window.GetWindow(this)
+                            };
+
+                            var stackPanel = new StackPanel { Margin = new Thickness(10) };
+
+                            var comboBox = new ComboBox
+                            {
+                                ItemsSource = allStatuses,
+                                DisplayMemberPath = "Status1",
+                                SelectedValuePath = "ID_status"
+                            };
+
+                            // Устанавливаем текущий статус
+                            comboBox.SelectedValue = order.Status_order;
+
+                            var buttonPanel = new StackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                HorizontalAlignment = HorizontalAlignment.Right,
+                                Margin = new Thickness(0, 10, 0, 0)
+                            };
+
+                            var okButton = new Button
+                            {
+                                Content = "ОК",
+                                Width = 80,
+                                Margin = new Thickness(0, 0, 10, 0)
+                            };
+
+                            var cancelButton = new Button
+                            {
+                                Content = "Отмена",
+                                Width = 80
+                            };
+
+                            bool dialogResult = false;
+
+                            okButton.Click += (s, args) =>
+                            {
+                                dialogResult = true;
+                                statusWindow.Close();
+                            };
+
+                            cancelButton.Click += (s, args) =>
+                            {
+                                dialogResult = false;
+                                statusWindow.Close();
+                            };
+
+                            buttonPanel.Children.Add(okButton);
+                            buttonPanel.Children.Add(cancelButton);
+
+                            stackPanel.Children.Add(new TextBlock { Text = "Выберите новый статус:" });
+                            stackPanel.Children.Add(comboBox);
+                            stackPanel.Children.Add(buttonPanel);
+
+                            statusWindow.Content = stackPanel;
+                            statusWindow.ShowDialog();
+
+                            if (dialogResult && comboBox.SelectedValue != null)
+                            {
+                                var orderToUpdate = context.Orders.Find(order.ID_order);
+                                if (orderToUpdate != null)
+                                {
+                                    orderToUpdate.Status_order = (int)comboBox.SelectedValue;
+                                    context.SaveChanges();
+                                    LoadOrders();
+                                    ClearSelection();
+                                    _selectedOrder = null;
+                                    UpdateButtonsState();
+
+                                    MessageBox.Show("Статус заказа успешно обновлен", "Успех",
+                                        MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка обновления статуса: {ex.Message}", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Выберите заказ для обновления статуса", "Предупреждение",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            LoadOrders();
+            ClearSelection();
+            _selectedOrder = null;
+            UpdateButtonsState();
+        }
     }
 
-    // ViewModel для отображения заказа
+    // ViewModel для отображения заказа (остается без изменений)
     public class OrderViewModel
     {
         public string OrderNumber { get; set; }

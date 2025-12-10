@@ -32,13 +32,8 @@
                             Background="{StaticResource AttentionBrush}" 
                             CornerRadius="5" 
                             Margin="0,0,15,0">
-                        <Border Width="40" Height="40" 
-        Background="{StaticResource AttentionBrush}" 
-        CornerRadius="5" 
-        Margin="0,0,15,0">
-                            <Image Source="/Pages/Image/Icon.png" 
-           Stretch="Uniform"/>
-                        </Border>
+                        <Image Source="/Pages/Image/Icon.png" 
+                               Stretch="Uniform"/>
                     </Border>
                     <TextBlock Text="ООО «Обувь»" 
                               Style="{StaticResource HeaderTextStyle}"
@@ -66,7 +61,8 @@
                             Content="Выйти"
                             Style="{StaticResource PrimaryButtonStyle}"
                             Padding="10,5"
-                            Click="LogoutButton_Click"/>
+                            Click="LogoutButton_Click"
+                            ToolTip="Выход из системы"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -90,33 +86,23 @@
                             Content="⬅️ Назад"
                             Style="{StaticResource NavButtonStyle}"
                             Click="BackButton_Click"
-                            Margin="0,0,0,10"/>
+                            Margin="0,0,0,10"
+                            ToolTip="Вернуться на предыдущую страницу"/>
 
                     <!-- Навигация для всех ролей -->
                     <Button x:Name="ProductsViewButton"
                             Content="📦 Просмотр товаров"
                             Style="{StaticResource NavButtonStyle}"
-                            Click="ProductsViewButton_Click"/>
+                            Click="ProductsViewButton_Click"
+                            ToolTip="Просмотр и управление товарами"/>
 
                     <!-- Навигация только для менеджера и администратора -->
                     <Button x:Name="OrdersViewButton"
                             Content="📋 Просмотр заказов"
                             Style="{StaticResource NavButtonStyle}"
                             Click="OrdersViewButton_Click"
-                            Visibility="Collapsed"/>
-
-                    <!-- Навигация только для администратора -->
-                    <Button x:Name="ProductsManageButton"
-                            Content="⚙️ Управление товарами"
-                            Style="{StaticResource NavButtonStyle}"
-                            Click="ProductsManageButton_Click"
-                            Visibility="Collapsed"/>
-
-                    <Button x:Name="OrdersManageButton"
-                            Content="🛠️ Управление заказами"
-                            Style="{StaticResource NavButtonStyle}"
-                            Click="OrdersManageButton_Click"
-                            Visibility="Collapsed"/>
+                            Visibility="Collapsed"
+                            ToolTip="Просмотр заказов"/>
                 </StackPanel>
             </Border>
 
@@ -127,6 +113,7 @@
                    Background="{StaticResource PrimaryBackgroundBrush}"/>
         </Grid>
 
+        <!-- Статусбар -->
         <StatusBar Grid.Row="2" 
            Background="{StaticResource SecondaryBackgroundBrush}">
             <StatusBarItem>
